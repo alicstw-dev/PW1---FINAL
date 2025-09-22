@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+
+{% block title %}Adicionar - MeuBolso{% endblock %}
+
+{% block content %}
+<header class="dashboard-header">
+    <h2>Adicionar Lançamentos</h2>
+</header>
+
+<div class="add-forms-grid">
+    <div class="section-card">
+        <h3>Adicionar Gasto Diário</h3>
+        <form action="{{ url_for('main.add_transaction') }}" method="post" class="add-form">
+            <div class="form-group">
+                <label for="description">Descrição</label>
+                <input type="text" id="description" name="description" placeholder="Ex: Supermercado">
+            </div>
+            <div class="form-group">
+                <label for="payment_method">Método de Pagamento</label>
+                <select id="payment_method" name="payment_method" required>
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Pix">Pix</option>
+                    <option value="Cartao de Credito">Cartão de Crédito</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="category">Categoria</label>
+                <select id="category" name="category" required>
+                    <option value="Alimentacao">Alimentação</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Moradia">Moradia</option>
+                    <option value="Lazer">Lazer</option>
+                    <option value="Saude">Saúde</option>
+                    <option value="Educacao">Educação</option>
+                    <option value="Outros">Outros</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="amount">Valor da Compra</label>
+                <input type="number" id="amount" name="amount" placeholder="R$ 0,00" step="0.01" required>
+            </div>
+            <input type="hidden" name="type" value="expense">
+            <button type="submit" class="btn btn-primary">Adicionar Lançamento</button>
+        </form>
+    </div>
+    <div class="flex-container">
+        <div class="section-card half-width">
+            <h3>Adicionar Renda Fixa</h3>
+            <form action="{{ url_for('main.add_income') }}" method="post" class="add-form">
+                <div class="form-group">
+                    <label for="income_value">Salário Mensal</label>
+                    <input type="number" id="income_value" name="income_value" placeholder="R$ 0,00" step="0.01">
+                </div>
+                <button type="submit" class="btn btn-primary">Salvar Renda</button>
+            </form>
+        </div>
+        <div class="section-card half-width">
+            <h3>Adicionar Cartão</h3>
+            <form action="{{ url_for('main.add_card') }}" method="post" class="add-form">
+                <div class="form-group">
+                    <label for="card_name">Nome do Banco</label>
+                    <input type="text" id="card_name" name="card_name" placeholder="Ex: Banco Digital 1">
+                </div>
+                <div class="form-group">
+                    <label for="card_due_day">Dia do Fechamento</label>
+                    <input type="number" id="card_due_day" name="card_due_day" min="1" max="31" placeholder="Ex: 15">
+                </div>
+                <button type="submit" class="btn btn-primary">Adicionar Cartão</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

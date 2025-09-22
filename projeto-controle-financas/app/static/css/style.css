@@ -1,0 +1,379 @@
+/* --- Estilos Gerais --- */
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background-color: #f7f9fc; /* Fundo padrão para o dashboard */
+}
+
+/* --- Estilos para as Telas de Login e Cadastro --- */
+.login-body {
+    background-color: #d5e1f4; /* Seu fundo azul personalizado */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.login-form {
+    background-color: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.login-form h1 {
+    color: #00014d; /* Sua cor */
+    font-size: 32px;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 16px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #011465; /* Sua cor */
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 12px;
+    background-color: #030750; /* Sua cor */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-submit:hover {
+    background-color: #070038; /* Sua cor */
+}
+
+.signup-link {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #555;
+}
+
+.signup-link a {
+    color: #10003e; /* Sua cor */
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.signup-link a:hover {
+    text-decoration: underline;
+}
+
+/* --- Estrutura do Dashboard (NOVO DESIGN) --- */
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* --- Barra Lateral (Sidebar) (NOVO DESIGN) --- */
+.sidebar.sidebar-dark {
+    width: 90px;
+    background-color: #1e293b;
+    padding: 20px 0;
+    transition: width 0.3s ease;
+}
+
+.sidebar-logo {
+    display: block;
+    text-align: center;
+    font-size: 28px;
+    color: #94a3b8;
+    margin-bottom: 40px;
+}
+
+.sidebar-dark .sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-dark .sidebar-menu li a {
+    color: #94a3b8;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 22px;
+    line-height: 1;
+    display: block;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.sidebar-dark .sidebar-menu li a:hover {
+    color: #ffffff;
+    background-color: #334155;
+}
+
+.sidebar-dark .sidebar-menu li.active a {
+    background-color: #818cf8;
+    color: #ffffff;
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 30px 40px;
+    min-width: 0;
+}
+
+/* --- Componentes do Dashboard (NOVO DESIGN) --- */
+.dashboard-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.month-selector button {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 15px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+}
+
+.card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-right: 15px;
+    color: white;
+    flex-shrink: 0;
+}
+.icon-saldo { background-color: #a78bfa; }
+.icon-receitas { background-color: #4ade80; }
+.icon-despesas { background-color: #f87171; }
+.icon-cartao { background-color: #60a5fa; }
+
+.card-content span { color: #64748b; font-size: 14px; }
+.card-content h2 { margin: 4px 0 0 0; font-size: 22px; color: #1e293b; }
+
+.main-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+}
+
+.section-card {
+    background-color: white;
+    padding: 25px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+}
+.section-card h3 { margin-top: 0; margin-bottom: 20px; font-size: 18px; }
+
+.transaction-list, .invoice-list { list-style: none; padding: 0; margin: 0; }
+.transaction-list li, .invoice-list li {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+.transaction-list li:last-child, .invoice-list li:last-child { margin-bottom: 0; }
+
+.transaction-icon, .invoice-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e2e8f0;
+    color: #64748b;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+.transaction-info, .invoice-info { flex-grow: 1; }
+.transaction-value, .invoice-value { font-weight: 700; }
+
+.tabs {
+    background-color: #f1f5f9;
+    border-radius: 12px;
+    padding: 5px;
+    margin-bottom: 20px;
+    display: flex;
+}
+.tab-btn {
+    flex-grow: 1;
+    background: none;
+    border: none;
+    padding: 8px 15px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+.tab-btn.active { background-color: #1e293b; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+/* --- Página de Adicionar --- */
+.add-forms-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+.add-forms-grid .section-card { padding: 30px; }
+.add-form .form-group { margin-bottom: 25px; }
+
+/* --- Estilos para a Página de Relatórios (ATUALIZADO) --- */
+.page-title {
+    margin: 0;
+    font-size: 24px;
+    color: #1e293b;
+}
+
+.filters {
+    display: flex;
+    gap: 15px;
+}
+
+.filters select {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 15px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.text-success { color: #28a745 !important; } /* Adicionado !important para garantir a cor */
+.text-danger { color: #dc3545 !important; }
+.text-info { color: #17a2b8; }
+.text-right { text-align: right; }
+
+.chart-container {
+    position: relative;
+    height: 350px;
+    width: 100%;
+}
+
+/* Os estilos da transaction-list que já definimos antes serão reutilizados aqui! */
+/* Não precisamos mais dos estilos de .transaction-table, então eles foram removidos. */
+
+/* --- Botões Padrão do App --- */
+.btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #1e293b;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #334155;
+}
+
+/* --- Ajustes Finais de Layout --- */
+.dashboard-header h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #1e293b;
+}
+
+.table-container {
+    width: 100%;
+    overflow-x: auto; /* Garante que a tabela seja rolável em telas pequenas */
+}
+
+.transaction-table {
+    white-space: nowrap; /* Impede que o texto da tabela quebre */
+}
+
+/* --- Regras de Responsividade (FINAL) --- */
+@media (max-width: 1024px) { /* Tablets */
+    .dashboard-container { flex-direction: column; }
+    .sidebar.sidebar-dark {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        padding: 0 15px;
+        box-sizing: border-box;
+    }
+    .sidebar-logo { display: none; }
+    .sidebar-dark .sidebar-menu { flex-direction: row; justify-content: space-around; width: 100%; }
+
+    .main-sections, .add-forms-grid { grid-template-columns: 1fr; }
+    .summary-cards { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 600px) { /* Celulares */
+    .summary-cards { grid-template-columns: 1fr; }
+    .main-content { padding: 15px; }
+    .login-body { align-items: flex-start; padding-top: 50px; }
+    .login-form { width: 100%; padding: 20px; box-shadow: none; }
+}

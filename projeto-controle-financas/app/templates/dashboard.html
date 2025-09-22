@@ -1,0 +1,110 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard - MeuBolso{% endblock %}
+
+{% block content %}
+<header class="dashboard-header">
+    <div class="month-selector">
+        <form id="filter-form" method="get" action="{{ url_for('main.dashboard') }}">
+            <select name="month" id="month-select" onchange="document.getElementById('filter-form').submit()">
+                {% for i in range(1, 13) %}
+                    <option value="{{ i }}" {% if i == selected_month %}selected{% endif %}>{{ month_names[i-1] }}</option>
+                {% endfor %}
+            </select>
+            <select name="year" id="year-select" onchange="document.getElementById('filter-form').submit()">
+                {% for year in years %}
+                    <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+</header>
+
+<section class="summary-cards">
+    <div class="card">
+        <div class="card-icon icon-saldo">
+            <i class="fas fa-eye"></i>
+        </div>
+        <div class="card-content">
+            <span>Saldo atual</span>
+            <h2>R$ {{ "%.2f"|format(balance) }}</h2>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-icon icon-receitas">
+            <i class="fas fa-arrow-up"></i>
+        </div>
+        <div class="card-content">
+            <span>Receitas</span>
+            <h2>R$ {{ "%.2f"|format(total_income) }}</h2>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-icon icon-despesas">
+            <i class="fas fa-arrow-down"></i>
+        </div>
+        <div class="card-content">
+            <span>Despesas</span>
+            <h2>R$ {{ "%.2f"|format(total_expense) }}</h2>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-icon icon-cartao">
+            <i class="fas fa-credit-card"></i>
+        </div>
+        <div class="card-content">
+            <span>Fatura do Cartão</span>
+            <h2>R$ {{ "%.2f"|format(credit_card_bill) }}</h2>
+        </div>
+    </div>
+</section>
+
+<section class="main-sections">
+    <div class="section-card">
+        <h3>Últimas Transações</h3>
+        <ul class="transaction-list">
+            {% for transaction in transactions %}
+            <li>
+                <div class="transaction-icon" style="background-color: {% if transaction.type == 'income' %}#e0f2f1{% else %}#fce4ec{% endif %}; color: {% if transaction.type == 'income' %}#00796b{% else %}#d81b60{% endif %};">
+                    <i class="fas fa-{% if transaction.type == 'income' %}briefcase{% else %}shopping-cart{% endif %}"></i>
+                </div>
+                <div class="transaction-info">
+                    <strong>{{ transaction.description }}</strong>
+                    <span>{{ transaction.date|format_date }} - {{ transaction.payment_method }}</span>
+                </div>
+                <span class="transaction-value {% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">
+                    {% if transaction.type == 'income' %}+{% else %}-{% endif %} R$ {{ "%.2f"|format(transaction.amount) }}
+                </span>
+            </li>
+            {% else %}
+            <li>
+                <p class="no-data">Nenhuma transação registrada ainda.</p>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="section-card">
+        <h3>Cartões de Crédito</h3>
+        <div class="tabs">
+            <button class="tab-btn active">Faturas Abertas</button>
+            <button class="tab-btn">Faturas Fechadas</button>
+        </div>
+        <ul class="invoice-list">
+            {% for invoice in invoices %}
+            <li>
+                <div class="invoice-icon"><i class="fab fa-cc-{{ invoice.card_brand|lower }}"></i></div>
+                <div class="invoice-info">
+                    <strong>{{ invoice.card_name }}</strong>
+                    <span>Fecha em {{ invoice.due_date|default('Data não disponível') }}</span>
+                </div>
+                <span class="invoice-value">R$ {{ "%.2f"|format(invoice.amount) }}</span>
+            </li>
+            {% else %}
+            <li>
+                <p class="no-data">Nenhuma fatura de cartão aberta.</p>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+{% endblock %}
