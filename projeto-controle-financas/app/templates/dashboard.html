@@ -466,7 +466,7 @@
 
         try {
             const response = await fetch(`/edit_transaction/${id}`, {
-                method: 'PUT',
+                method: 'POST', // CORRIGIDO: mudou de 'PUT' para 'POST'
                 headers: {
                     'Content-Type': 'application/json'
                 },
