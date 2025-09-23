@@ -18,15 +18,16 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'main.login'
     
-    # A importação do blueprint deve vir aqui para evitar a importação circular.
+    # Importa e registra os blueprints
     from .routes import main_bp
-    app.register_blueprint(main_bp)
+    from .api import api_bp
+    
+    app.register_blueprint(main_bp)   # Rotas Web (HTML)
+    app.register_blueprint(api_bp)    # Rotas API (JSON)
 
     return app
 
-# O user_loader deve ser definido após login_manager. Isso também
-# é um bom lugar para importar o modelo de usuário para evitar o erro de
-# importação circular com o banco de dados.
+# O user_loader deve ser definido após login_manager.
 @login_manager.user_loader
 def load_user(user_id):
     from .models import User
