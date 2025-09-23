@@ -3,71 +3,190 @@
 {% block title %}Adicionar - MeuBolso{% endblock %}
 
 {% block content %}
-<header class="dashboard-header">
-    <h2>Adicionar Lançamentos</h2>
+<header class="page-header">
+    <h2 class="page-title">Adicionar Dados</h2>
 </header>
 
-<div class="add-forms-grid">
-    <div class="section-card">
-        <h3>Adicionar Gasto Diário</h3>
-        <form action="{{ url_for('main.add_transaction') }}" method="post" class="add-form">
+<div class="add-container">
+    <!-- Botões de aba -->
+    <div class="tab-buttons">
+        <button class="tab-btn active" onclick="openTab(event, 'transaction')">Transação</button>
+        <button class="tab-btn" onclick="openTab(event, 'income')">Renda Fixa</button>
+        <button class="tab-btn" onclick="openTab(event, 'card')">Cartão</button>
+    </div>
+
+    <!-- Conteúdo das abas -->
+    <div id="transaction" class="tab-content">
+        <form method="post" action="{{ url_for('main.add') }}">
+            <input type="hidden" name="action" value="add_transaction">
             <div class="form-group">
-                <label for="description">Descrição</label>
-                <input type="text" id="description" name="description" placeholder="Ex: Supermercado">
+                <label for="type">Tipo:</label>
+                <select name="type" id="type" required>
+                    <option value="expense">Despesa</option>
+                    <option value="income">Receita</option>
+                </select>
             </div>
             <div class="form-group">
-                <label for="payment_method">Método de Pagamento</label>
-                <select id="payment_method" name="payment_method" required>
+                <label for="amount">Valor:</label>
+                <input type="number" name="amount" id="amount" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Descrição:</label>
+                <input type="text" name="description" id="description" required>
+            </div>
+            <div class="form-group">
+                <label for="payment_method">Método de Pagamento:</label>
+                <select name="payment_method" id="payment_method" required>
                     <option value="Dinheiro">Dinheiro</option>
-                    <option value="Pix">Pix</option>
+                    <option value="Cartao de Debito">Cartão de Débito</option>
                     <option value="Cartao de Credito">Cartão de Crédito</option>
+                    <option value="Transferencia">Transferência/PIX</option>
                 </select>
             </div>
             <div class="form-group">
-                <label for="category">Categoria</label>
-                <select id="category" name="category" required>
-                    <option value="Alimentacao">Alimentação</option>
-                    <option value="Transporte">Transporte</option>
-                    <option value="Moradia">Moradia</option>
-                    <option value="Lazer">Lazer</option>
-                    <option value="Saude">Saúde</option>
-                    <option value="Educacao">Educação</option>
-                    <option value="Outros">Outros</option>
+                <label for="category">Categoria:</label>
+                <select name="category" id="category" required>
+                    <option value="">Selecione uma categoria...</option>
+                    {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                    {% endfor %}
                 </select>
             </div>
-            <div class="form-group">
-                <label for="amount">Valor da Compra</label>
-                <input type="number" id="amount" name="amount" placeholder="R$ 0,00" step="0.01" required>
-            </div>
-            <input type="hidden" name="type" value="expense">
-            <button type="submit" class="btn btn-primary">Adicionar Lançamento</button>
+            <button type="submit" class="btn-submit">Adicionar Transação</button>
         </form>
     </div>
-    <div class="flex-container">
-        <div class="section-card half-width">
-            <h3>Adicionar Renda Fixa</h3>
-            <form action="{{ url_for('main.add_income') }}" method="post" class="add-form">
-                <div class="form-group">
-                    <label for="income_value">Salário Mensal</label>
-                    <input type="number" id="income_value" name="income_value" placeholder="R$ 0,00" step="0.01">
-                </div>
-                <button type="submit" class="btn btn-primary">Salvar Renda</button>
-            </form>
-        </div>
-        <div class="section-card half-width">
-            <h3>Adicionar Cartão</h3>
-            <form action="{{ url_for('main.add_card') }}" method="post" class="add-form">
-                <div class="form-group">
-                    <label for="card_name">Nome do Banco</label>
-                    <input type="text" id="card_name" name="card_name" placeholder="Ex: Banco Digital 1">
-                </div>
-                <div class="form-group">
-                    <label for="card_due_day">Dia do Fechamento</label>
-                    <input type="number" id="card_due_day" name="card_due_day" min="1" max="31" placeholder="Ex: 15">
-                </div>
-                <button type="submit" class="btn btn-primary">Adicionar Cartão</button>
-            </form>
-        </div>
+
+    <div id="income" class="tab-content" style="display:none;">
+        <form method="post" action="{{ url_for('main.add') }}">
+            <input type="hidden" name="action" value="add_income">
+            <div class="form-group">
+                <label for="income_value">Valor da Renda Fixa:</label>
+                <input type="number" name="income_value" id="income_value" step="0.01" required>
+            </div>
+            <button type="submit" class="btn-submit">Adicionar Renda Fixa</button>
+        </form>
+    </div>
+
+    <div id="card" class="tab-content" style="display:none;">
+        <form method="post" action="{{ url_for('main.add') }}">
+            <input type="hidden" name="action" value="add_card">
+            <div class="form-group">
+                <label for="card_name">Nome do Cartão:</label>
+                <input type="text" name="card_name" id="card_name" required>
+            </div>
+            <div class="form-group">
+                <label for="card_due_day">Dia de Vencimento:</label>
+                <input type="number" name="card_due_day" id="card_due_day" min="1" max="31" required>
+            </div>
+            <button type="submit" class="btn-submit">Adicionar Cartão</button>
+        </form>
     </div>
 </div>
+
+<style>
+    .page-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .page-title {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2d3748;
+    }
+    .add-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .tab-buttons {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    .tab-btn {
+        flex-grow: 1;
+        padding: 0.75rem;
+        border: none;
+        background-color: transparent;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        color: #718096;
+        transition: color 0.2s, border-bottom 0.2s;
+    }
+    .tab-btn.active {
+        color: #2b6cb0;
+        border-bottom: 2px solid #2b6cb0;
+        font-weight: bold;
+    }
+    .tab-content {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #4a5568;
+    }
+    .form-group input, .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        color: #2d3748;
+    }
+    .form-group input:focus, .form-group select:focus {
+        outline: none;
+        border-color: #4299e1;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+    }
+    .btn-submit {
+        width: 100%;
+        padding: 0.75rem;
+        background-color: #2b6cb0;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .btn-submit:hover {
+        background-color: #1a4d80;
+    }
+</style>
+
+<script>
+    function openTab(evt, tabName) {
+        var i, tabContent, tabButtons;
+        tabContent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabContent.length; i++) {
+            tabContent[i].style.display = "none";
+        }
+        tabButtons = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tabButtons.length; i++) {
+            tabButtons[i].className = tabButtons[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // Exibir a primeira aba por padrão ao carregar a página
+        document.getElementsByClassName("tab-btn")[0].click();
+    });
+</script>
 {% endblock %}

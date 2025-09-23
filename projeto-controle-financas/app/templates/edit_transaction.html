@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+
+{% block title %}Editar Transação{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <div class="bg-white rounded-lg shadow-lg p-6 max-w-lg mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Editar Transação</h1>
+
+        <form method="POST" action="{{ url_for('main.edit_transaction', transaction_id=transaction.id) }}" class="space-y-6">
+            <div class="form-group">
+                <label for="amount" class="block text-gray-700 font-bold mb-2">Valor:</label>
+                <input type="number" id="amount" name="amount" value="{{ '%.2f'|format(transaction.amount) }}" step="0.01" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300">
+            </div>
+
+            <div class="form-group">
+                <label for="description" class="block text-gray-700 font-bold mb-2">Descrição:</label>
+                <input type="text" id="description" name="description" value="{{ transaction.description }}"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300">
+            </div>
+
+            <div class="form-group">
+                <label for="payment_method" class="block text-gray-700 font-bold mb-2">Método de Pagamento:</label>
+                <select id="payment_method" name="payment_method" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300">
+                    <option value="Cartao de Debito" {% if transaction.payment_method == 'Cartao de Debito' %}selected{% endif %}>Cartão de Débito</option>
+                    <option value="Cartao de Credito" {% if transaction.payment_method == 'Cartao de Credito' %}selected{% endif %}>Cartão de Crédito</option>
+                    <option value="Dinheiro" {% if transaction.payment_method == 'Dinheiro' %}selected{% endif %}>Dinheiro</option>
+                    <option value="PIX" {% if transaction.payment_method == 'PIX' %}selected{% endif %}>PIX</option>
+                    <option value="Transferencia" {% if transaction.payment_method == 'Transferencia' %}selected{% endif %}>Transferência</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="category" class="block text-gray-700 font-bold mb-2">Categoria:</label>
+                <select id="category" name="category" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300">
+                    <option value="Alimentacao" {% if transaction.category == 'Alimentacao' %}selected{% endif %}>Alimentação</option>
+                    <option value="Transporte" {% if transaction.category == 'Transporte' %}selected{% endif %}>Transporte</option>
+                    <option value="Salario" {% if transaction.category == 'Salario' %}selected{% endif %}>Salário</option>
+                    <option value="Moradia" {% if transaction.category == 'Moradia' %}selected{% endif %}>Moradia</option>
+                    <option value="Lazer" {% if transaction.category == 'Lazer' %}selected{% endif %}>Lazer</option>
+                    <option value="Saude" {% if transaction.category == 'Saude' %}selected{% endif %}>Saúde</option>
+                    <option value="Educacao" {% if transaction.category == 'Educacao' %}selected{% endif %}>Educação</option>
+                    <option value="Outros" {% if transaction.category == 'Outros' %}selected{% endif %}>Outros</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="block text-gray-700 font-bold mb-2">Tipo:</label>
+                <div class="flex items-center space-x-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="type" value="income" {% if transaction.type == 'income' %}checked{% endif %} class="form-radio h-5 w-5 text-green-600 focus:ring-green-500">
+                        <span class="ml-2 text-green-600 font-medium">Receita</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="type" value="expense" {% if transaction.type == 'expense' %}checked{% endif %} class="form-radio h-5 w-5 text-red-600 focus:ring-red-500">
+                        <span class="ml-2 text-red-600 font-medium">Despesa</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center">
+                <button type="submit" class="w-full bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition duration-300 transform hover:scale-105">
+                    Salvar Alterações
+                </button>
+            </div>
+            <a href="{{ url_for('main.dashboard') }}" class="block text-center text-gray-600 mt-4 hover:text-gray-800 transition duration-300">
+                Cancelar
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

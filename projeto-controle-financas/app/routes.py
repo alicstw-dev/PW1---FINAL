@@ -1,7 +1,8 @@
-from flask import render_template, redirect, url_for, request, Blueprint, flash, session
+from flask import render_template, redirect, url_for, request, Blueprint, flash, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from . import db
-from .models import User, Transaction, Card
+from flask_login import login_user, logout_user, login_required, current_user
+from app import db
+from app.models import User, Transaction, Card
 from sqlalchemy import func, extract
 from datetime import datetime
 from calendar import monthrange
@@ -18,10 +19,13 @@ def format_date_filter(value):
         return value.strftime('%d/%m/%Y')
     return datetime.fromisoformat(value).strftime('%d/%m/%Y')
 
-# Página de Login (também usada como página inicial '/')
+# Rota de Login e principal
 @main_bp.route('/', methods=['GET', 'POST'])
 @main_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.dashboard'))
+
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -31,7 +35,7 @@ def login():
 
         user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
-            session['user_id'] = user.id
+            login_user(user)
             flash('Login realizado com sucesso!', 'success')
             return redirect(url_for('main.dashboard'))
         else:
@@ -42,6 +46,9 @@ def login():
 # Página de Registro
 @main_bp.route('/register', methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.dashboard'))
+
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
@@ -64,14 +71,10 @@ def register():
 
 # Dashboard (só acessível logado)
 @main_bp.route('/dashboard', methods=['GET'])
+@login_required
 def dashboard():
-    if 'user_id' not in session:
-        flash('Faça login para acessar o dashboard.', 'warning')
-        return redirect(url_for('main.login'))
-
-    user_id = session['user_id']
+    user_id = current_user.id
     
-    # Adicionando um filtro para o mês e ano
     try:
         selected_month = int(request.args.get('month', datetime.now().month))
         selected_year = int(request.args.get('year', datetime.now().year))
@@ -79,30 +82,25 @@ def dashboard():
         selected_month = datetime.now().month
         selected_year = datetime.now().year
     
-    # Filtrar transações por mês e ano
     transactions = Transaction.query.filter(
         Transaction.user_id == user_id,
         extract('month', Transaction.date) == selected_month,
         extract('year', Transaction.date) == selected_year
     ).order_by(Transaction.date.desc()).all()
 
-    # Calcular saldos com base nas transações filtradas
     total_income = sum(t.amount for t in transactions if t.type == 'income')
     total_expense = sum(t.amount for t in transactions if t.type == 'expense')
     balance = total_income - total_expense
 
-    # Obter anos disponíveis para o seletor
     years = sorted(list(set(t.date.year for t in Transaction.query.filter_by(user_id=user_id).all())))
     if not years:
         years = [datetime.now().year]
 
-    # Nomes dos meses para o seletor
     month_names = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 
-    # Faturas de cartão de crédito do mês atual
     credit_card_bill = sum(t.amount for t in transactions if t.payment_method == 'Cartao de Credito' and t.type == 'expense')
     
-    invoices = [] # Lógica para buscar faturas de cartões de crédito aqui
+    invoices = []
 
     return render_template(
         'dashboard.html', 
@@ -119,123 +117,103 @@ def dashboard():
         years=years
     )
 
-# Adicionar Transação (agora apenas para despesas)
+# Adicionar Transação, Renda e Cartão (Rota Unificada)
 @main_bp.route('/add', methods=['GET', 'POST'])
-def add_transaction():
-    if 'user_id' not in session:
-        flash('Faça login para adicionar transações.', 'warning')
-        return redirect(url_for('main.login'))
+@login_required
+def add():
+    categories = ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Educação', 'Salário', 'Outros']
+    cards = Card.query.filter_by(user_id=current_user.id).all()
 
     if request.method == 'POST':
-        # Lógica para lidar com o envio do formulário (POST)
-        type_ = request.form.get('type')
-        amount = request.form.get('amount')
-        description = request.form.get('description', '')
-        payment_method = request.form.get('payment_method')
-        category = request.form.get('category')
+        action = request.form.get('action')
 
-        if not type_ or not amount or not payment_method or not category:
-            flash('Por favor, preencha todos os campos obrigatórios.', 'danger')
-            return redirect(url_for('main.add_transaction'))
+        if action == 'add_transaction':
+            type_ = request.form.get('type')
+            amount = request.form.get('amount')
+            description = request.form.get('description', '')
+            payment_method = request.form.get('payment_method')
+            category = request.form.get('category')
+            
+            if not all([type_, amount, payment_method, category]):
+                flash('Por favor, preencha todos os campos obrigatórios da transação.', 'danger')
+                return redirect(url_for('main.add'))
+                
+            try:
+                amount = float(amount)
+            except (ValueError, TypeError):
+                flash('O valor da transação deve ser um número válido.', 'danger')
+                return redirect(url_for('main.add'))
 
-        try:
-            amount = float(amount)
-        except (ValueError, TypeError):
-            flash('O valor da transação deve ser um número válido.', 'danger')
-            return redirect(url_for('main.add_transaction'))
+            new_transaction = Transaction(
+                type=type_,
+                amount=amount,
+                description=description,
+                payment_method=payment_method,
+                category=category,
+                user_id=current_user.id
+            )
+            db.session.add(new_transaction)
+            db.session.commit()
+            flash('Transação adicionada com sucesso!', 'success')
+            return redirect(url_for('main.dashboard'))
 
-        new_transaction = Transaction(
-            type=type_,
-            amount=amount,
-            description=description,
-            payment_method=payment_method,
-            category=category,
-            user_id=session['user_id']
-        )
-        db.session.add(new_transaction)
-        db.session.commit()
+        elif action == 'add_income':
+            income_value = request.form.get('income_value')
+            if not income_value:
+                flash('Por favor, insira um valor para a renda.', 'danger')
+                return redirect(url_for('main.add'))
+            
+            try:
+                amount = float(income_value)
+            except (ValueError, TypeError):
+                flash('O valor da renda deve ser um número válido.', 'danger')
+                return redirect(url_for('main.add'))
 
-        flash('Transação adicionada com sucesso!', 'success')
-        return redirect(url_for('main.dashboard'))
-    else:
-        # Lógica para exibir a página (GET)
-        return render_template('add_transaction.html', active_page='add')
+            new_income_transaction = Transaction(
+                type='income',
+                amount=amount,
+                description='Renda Fixa',
+                payment_method='Transferencia',
+                category='Salario',
+                user_id=current_user.id
+            )
+            db.session.add(new_income_transaction)
+            db.session.commit()
+            flash('Renda fixa adicionada com sucesso!', 'success')
+            return redirect(url_for('main.dashboard'))
 
-# Nova Rota para Adicionar Renda Fixa
-@main_bp.route('/add_income', methods=['POST'])
-def add_income():
-    if 'user_id' not in session:
-        flash('Faça login para adicionar renda.', 'warning')
-        return redirect(url_for('main.login'))
-
-    income_value = request.form.get('income_value')
-    if not income_value:
-        flash('Por favor, insira um valor para a renda.', 'danger')
-        return redirect(url_for('main.add_transaction'))
+        elif action == 'add_card':
+            card_name = request.form.get('card_name')
+            card_due_day = request.form.get('card_due_day')
+            if not card_name or not card_due_day:
+                flash('Por favor, preencha todos os campos do cartão.', 'danger')
+                return redirect(url_for('main.add'))
+            
+            try:
+                due_day = int(card_due_day)
+                if not 1 <= due_day <= 31:
+                    raise ValueError("Dia de fechamento inválido.")
+            except (ValueError, TypeError):
+                flash('O dia de fechamento do cartão deve ser um número entre 1 e 31.', 'danger')
+                return redirect(url_for('main.add'))
+            
+            new_card = Card(
+                name=card_name,
+                due_day=due_day,
+                user_id=current_user.id
+            )
+            db.session.add(new_card)
+            db.session.commit()
+            flash('Cartão adicionado com sucesso!', 'success')
+            return redirect(url_for('main.dashboard'))
     
-    try:
-        amount = float(income_value)
-    except (ValueError, TypeError):
-        flash('O valor da renda deve ser um número válido.', 'danger')
-        return redirect(url_for('main.add_transaction'))
-
-    new_income_transaction = Transaction(
-        type='income',
-        amount=amount,
-        description='Renda Fixa',
-        payment_method='Transferencia',
-        category='Salario',
-        user_id=session['user_id']
-    )
-    db.session.add(new_income_transaction)
-    db.session.commit()
-
-    flash('Renda fixa adicionada com sucesso!', 'success')
-    return redirect(url_for('main.dashboard'))
-
-# Nova Rota para Adicionar Cartão
-@main_bp.route('/add_card', methods=['POST'])
-def add_card():
-    if 'user_id' not in session:
-        flash('Faça login para adicionar um cartão.', 'warning')
-        return redirect(url_for('main.login'))
-    
-    from .models import Card
-
-    card_name = request.form.get('card_name')
-    card_due_day = request.form.get('card_due_day')
-
-    if not card_name or not card_due_day:
-        flash('Por favor, preencha todos os campos do cartão.', 'danger')
-        return redirect(url_for('main.add_transaction'))
-    
-    try:
-        due_day = int(card_due_day)
-        if not 1 <= due_day <= 31:
-            raise ValueError("Dia de fechamento inválido.")
-    except (ValueError, TypeError):
-        flash('O dia de fechamento do cartão deve ser um número entre 1 e 31.', 'danger')
-        return redirect(url_for('main.add_transaction'))
-    
-    new_card = Card(
-        name=card_name,
-        due_day=due_day,
-        user_id=session['user_id']
-    )
-    db.session.add(new_card)
-    db.session.commit()
-
-    flash('Cartão adicionado com sucesso!', 'success')
-    return redirect(url_for('main.dashboard'))
+    return render_template('add_transaction.html', active_page='add', categories=categories, cards=cards)
 
 # Relatórios
 @main_bp.route('/reports')
+@login_required
 def reports():
-    if 'user_id' not in session:
-        flash('Faça login para ver relatórios.', 'warning')
-        return redirect(url_for('main.login'))
-
-    user_id = session['user_id']
+    user_id = current_user.id
 
     try:
         current_year = int(request.args.get('year', datetime.now().year))
@@ -246,14 +224,13 @@ def reports():
         flash('Filtro de data inválido. Exibindo dados do mês atual.', 'warning')
 
     start_date = datetime(current_year, current_month, 1)
-    end_date = datetime(current_year, current_month, monthrange(current_year, current_month)[1])
+    end_date = datetime(current_year, current_month, monthrange(current_year, current_month)[1], 23, 59, 59)
 
     transactions = Transaction.query.filter_by(user_id=user_id) \
                                    .filter(Transaction.date.between(start_date, end_date)) \
                                    .order_by(Transaction.date.desc()) \
                                    .all()
     
-    # Prepara os dados para o gráfico de despesas por categoria
     expenses_by_category = defaultdict(float)
     for transaction in transactions:
         if transaction.type == 'expense':
@@ -262,23 +239,22 @@ def reports():
     expense_labels = list(expenses_by_category.keys())
     expense_data = list(expenses_by_category.values())
 
-    # Prepara os dados para o gráfico de Receitas vs Despesas
     trend_income = defaultdict(float)
     trend_expense = defaultdict(float)
-    dates_sorted = sorted(list(set(t.date for t in transactions)))
-    trend_labels = [d.strftime('%d/%m') for d in dates_sorted]
+    
+    # Gerar todas as datas do mês para o gráfico
+    num_days = monthrange(current_year, current_month)[1]
+    trend_labels = [f"{day}/{current_month}" for day in range(1, num_days + 1)]
+    trend_income_data = [0] * num_days
+    trend_expense_data = [0] * num_days
 
     for transaction in transactions:
-        date_str = transaction.date.strftime('%d/%m')
+        day = transaction.date.day
         if transaction.type == 'income':
-            trend_income[date_str] += transaction.amount
+            trend_income_data[day - 1] += transaction.amount
         else:
-            trend_expense[date_str] += transaction.amount
+            trend_expense_data[day - 1] += transaction.amount
     
-    trend_income_data = [trend_income[label] for label in trend_labels]
-    trend_expense_data = [trend_expense[label] for label in trend_labels]
-    
-    # Converte os objetos de transação para uma lista de dicionários
     transactions_data = [{
         'id': t.id,
         'type': t.type,
@@ -286,7 +262,7 @@ def reports():
         'description': t.description,
         'payment_method': t.payment_method,
         'category': t.category,
-        'date': t.date.isoformat()  # Converte a data para uma string ISO
+        'date': t.date.isoformat() 
     } for t in transactions]
 
     cards = Card.query.filter_by(user_id=user_id).all()
@@ -297,10 +273,14 @@ def reports():
 
     month_names = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
     
+    all_categories = sorted(list(set(t.category for t in Transaction.query.filter_by(user_id=user_id).all() if t.category)))
+    if not all_categories:
+        all_categories = ['Alimentação', 'Transporte', 'Lazer', 'Moradia', 'Educação', 'Saúde', 'Salário', 'Outros']
+
     return render_template(
         'reports.html',
         active_page='reports',
-        transactions=transactions_data,  # Passa a lista de dicionários serializáveis
+        transactions=transactions_data,
         cards=cards,
         total_income=total_income,
         total_expense=total_expense,
@@ -313,12 +293,70 @@ def reports():
         expense_data=expense_data,
         trend_labels=trend_labels,
         trend_income_data=trend_income_data,
-        trend_expense_data=trend_expense_data
+        trend_expense_data=trend_expense_data,
+        all_categories=all_categories
     )
+
+# Deletar uma transação
+@main_bp.route('/delete_transaction/<int:transaction_id>', methods=['DELETE'])
+@login_required
+def delete_transaction(transaction_id):
+    print(f"Recebida requisição DELETE para a transação com ID: {transaction_id}")
+    transaction = Transaction.query.get_or_404(transaction_id)
+    if transaction.user_id != current_user.id:
+        print("Erro: Usuário não autorizado para deletar esta transação.")
+        return jsonify({'status': 'error', 'message': 'Você não tem permissão para deletar esta transação.'}), 403
+    try:
+        db.session.delete(transaction)
+        db.session.commit()
+        print("Sucesso: Transação deletada com sucesso!")
+        return jsonify({'status': 'success', 'message': 'Transação deletada com sucesso!'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao deletar a transação: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# Editar uma transação
+@main_bp.route('/edit_transaction/<int:transaction_id>', methods=['POST'])
+@login_required
+def edit_transaction(transaction_id):
+    print(f"Recebida requisição POST para a transação com ID: {transaction_id}")
+    transaction = Transaction.query.get_or_404(transaction_id)
+    if transaction.user_id != current_user.id:
+        print("Erro: Usuário não autorizado para editar esta transação.")
+        return jsonify({'status': 'error', 'message': 'Você não tem permissão para editar esta transação.'}), 403
+
+    data = request.json
+    try:
+        transaction.amount = float(data['amount'])
+        transaction.description = data['description']
+        transaction.payment_method = data['payment_method']
+        transaction.category = data['category']
+        transaction.type = data['type']
+        
+        db.session.commit()
+        print("Sucesso: Transação atualizada com sucesso!")
+        return jsonify({'status': 'success', 'message': 'Transação atualizada com sucesso!'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao editar a transação: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Dados inválidos, por favor, verifique os campos.'}), 400
+    
+# Limpar todos os dados do usuário
+@main_bp.route('/clear_data', methods=['POST'])
+@login_required
+def clear_data():
+    transactions = Transaction.query.filter_by(user_id=current_user.id).all()
+    for transaction in transactions:
+        db.session.delete(transaction)
+    db.session.commit()
+    flash('Todos os dados foram apagados com sucesso!', 'success')
+    return redirect(url_for('main.dashboard'))
 
 # Logout
 @main_bp.route('/logout')
+@login_required
 def logout():
-    session.pop('user_id', None)
+    logout_user()
     flash('Logout realizado.', 'info')
     return redirect(url_for('main.login'))

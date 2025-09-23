@@ -1,8 +1,10 @@
-from app import create_app
+from app import create_app, db
 
-# Chama a função que cria a nossa aplicação
 app = create_app()
 
-# Executa o servidor
+# Garante que as tabelas do banco de dados sejam criadas antes da primeira requisição
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
     app.run(debug=True)
