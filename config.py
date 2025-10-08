@@ -14,3 +14,5 @@ class Config:
 
     SQLALCHEMY_DATABASE_URI = database_url or \
         "sqlite:///" + os.path.join(basedir, "app.db")
+
+    DEBUG = os.getenv("FLASK_ENV") == "development"

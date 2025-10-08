@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-md p-6">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-comments text-blue-500 mr-2"></i>
+        Chat de Conversa
+    </h2>
+    
+    <div id="chat-box" class="border border-gray-300 rounded-lg p-4 h-96 overflow-y-auto bg-gray-50 mb-4">
+        <!-- Mensagens serão exibidas aqui -->
+        <div class="text-gray-500 text-center mt-10">Nenhuma mensagem ainda. Inicie a conversa abaixo 👇</div>
+    </div>
+
+    <form id="chat-form" class="flex">
+        <input type="text" id="chat-input" placeholder="Digite sua mensagem..." 
+               class="flex-grow border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <button type="submit" 
+                class="bg-blue-500 text-white px-5 py-2 rounded-r-lg hover:bg-blue-600 transition-colors">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </form>
+</div>
+
+<script>
+document.getElementById("chat-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const input = document.getElementById("chat-input");
+    const message = input.value.trim();
+    const chatBox = document.getElementById("chat-box");
+
+    if (message !== "") {
+        // Exibe a mensagem do usuário
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("text-right", "mb-2");
+        msgDiv.innerHTML = `<span class="inline-block bg-blue-500 text-white px-3 py-2 rounded-lg">${message}</span>`;
+        chatBox.appendChild(msgDiv);
+
+        // Rola para o fim
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Limpa o campo de entrada
+        input.value = "";
+
+        // Simula resposta automática
+        setTimeout(() => {
+            const reply = document.createElement("div");
+            reply.classList.add("text-left", "mb-2");
+            reply.innerHTML = `<span class="inline-block bg-gray-200 text-gray-800 px-3 py-2 rounded-lg">Mensagem recebida: "${message}"</span>`;
+            chatBox.appendChild(reply);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }, 700);
+    }
+});
+</script>
+{% endblock %}

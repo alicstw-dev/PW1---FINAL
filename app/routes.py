@@ -353,6 +353,11 @@ def clear_data():
     flash('Todos os dados foram apagados com sucesso!', 'success')
     return redirect(url_for('main.dashboard'))
 
+
+@main_bp.route("/chat")
+def chat():
+    return render_template("chat.html", title="Chat de Conversa", active_page="chat")
+
 # Logout
 @main_bp.route('/logout')
 @login_required
