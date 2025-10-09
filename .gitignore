@@ -1,0 +1,56 @@
+# ============== Sistema Operacional ==============
+.DS_Store # macOS
+.env # Variáveis de ambiente (crucial para segurança!)
+.history # Histórico de ferramentas/extensões
+Thumbs.db # Windows
+
+# ================== Python ===================
+# Arquivos de bytecode compilados
+__pycache__/
+*.pyc
+*$py.class
+
+# Distribuição
+.Python
+build/
+dist/
+wheels/
+*.egg-info/
+*.whl
+
+# Instalação/Ambiente Virtual
+# Diretório padrão do venv e outros ambientes comuns
+venv/
+env/
+.venv/
+.env/
+/bin/
+/include/
+/lib/
+/lib64/
+
+# Testes
+.pytest_cache/
+htmlcov/
+.tox/
+
+# Logs e Dados Temporários
+*.log
+*.tmp
+*.bak
+*.sqlite3 # Bancos de dados SQLite locais
+.coverage
+
+# ================== IDEs/Ferramentas ===================
+# JetBrains (PyCharm, IntelliJ)
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/ # VS Code settings
+.mypy_cache/ # MyPy
+
+# Jupyter / IPython
+.ipynb_checkpoints
+profile_default/
+ipython_config.py
