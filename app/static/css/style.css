@@ -5,12 +5,12 @@ body {
     background-color: #f7f9fc; /* Fundo padrão para o dashboard */
 }
 
-/* --- Estilos para as Telas de Login e Cadastro --- */
+/* --- Estilos para as Telas de Login e Cadastro (Centralização Corrigida) --- */
 .login-body {
     background-color: #d5e1f4; /* Seu fundo azul personalizado */
     display: flex;
-    justify-content: center;
-    align-items: center;
+    justify-content: center; /* Centraliza horizontalmente */
+    align-items: center; /* Centraliza verticalmente */
     height: 100vh;
 }
 
@@ -18,8 +18,10 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    margin-top: 60px;
     width: 100%;
 }
+
 
 .login-form {
     background-color: white;
@@ -302,7 +304,7 @@ body {
     cursor: pointer;
 }
 
-.text-success { color: #28a745 !important; } /* Adicionado !important para garantir a cor */
+.text-success { color: #28a745 !important; }
 .text-danger { color: #dc3545 !important; }
 .text-info { color: #17a2b8; }
 .text-right { text-align: right; }
@@ -312,9 +314,6 @@ body {
     height: 350px;
     width: 100%;
 }
-
-/* Os estilos da transaction-list que já definimos antes serão reutilizados aqui! */
-/* Não precisamos mais dos estilos de .transaction-table, então eles foram removidos. */
 
 /* --- Botões Padrão do App --- */
 .btn {
@@ -374,6 +373,9 @@ body {
 @media (max-width: 600px) { /* Celulares */
     .summary-cards { grid-template-columns: 1fr; }
     .main-content { padding: 15px; }
-    .login-body { align-items: flex-start; padding-top: 50px; }
+    
+    /* A regra .login-body { align-items: flex-start; padding-top: 50px; } FOI REMOVIDA AQUI 
+       para que a regra principal de centralização (align-items: center) funcione! */
+    
     .login-form { width: 100%; padding: 20px; box-shadow: none; }
 }
