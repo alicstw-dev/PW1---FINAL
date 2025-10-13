@@ -54,7 +54,7 @@
             <i class="fas fa-credit-card"></i>
         </div>
         <div class="card-content">
-            <span>Fatura do Cartão</span>
+            <span>Despesa no Cartão (Mês)</span>
             <h2>R$ {{ "%.2f"|format(credit_card_bill) }}</h2>
         </div>
     </div>
@@ -95,32 +95,42 @@
             <button type="submit" class="btn-clear-data">Limpar Todos os Dados</button>
         </form>
     </div>
+    
     <div class="section-card">
-        <h3>Cartões de Crédito</h3>
+        <h3>Gerenciamento de Cartões de Crédito</h3>
         <div class="tabs">
-            <button class="tab-btn active">Faturas Abertas</button>
-            <button class="tab-btn">Faturas Fechadas</button>
+            <button class="tab-btn active">Cartões Cadastrados</button>
         </div>
         <ul class="invoice-list">
-            {% for invoice in invoices %}
+            {% for card in cards %}
             <li>
-                <div class="invoice-icon"><i class="fab fa-cc-{{ invoice.card_brand|lower }}"></i></div>
+                <div class="invoice-icon"><i class="fas fa-credit-card"></i></div>
                 <div class="invoice-info">
-                    <strong>{{ invoice.card_name }}</strong>
-                    <span>Fecha em {{ invoice.due_date|default('Data não disponível') }}</span>
+                    <strong>{{ card.name }}</strong>
+                    <span>Vencimento: Dia {{ card.due_day }}</span>
+                    {% set invoice_data = invoices.closed | selectattr('card_id', 'equalto', card.id) | first %}
+                    {% if invoice_data %}
+                        <span class="text-danger">Despesa no Mês: R$ {{ "%.2f"|format(invoice_data.amount) }}</span>
+                    {% endif %}
                 </div>
-                <span class="invoice-value">R$ {{ "%.2f"|format(invoice.amount) }}</span>
+                <div class="flex items-center space-x-2">
+                    <button class="text-blue-500 hover:text-blue-700 edit-card-btn" onclick="showEditCardModal({{ card.id }})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-red-500 hover:text-red-700 delete-card-btn" onclick="showDeleteCardConfirm({{ card.id }})">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
             </li>
             {% else %}
             <li>
-                <p class="no-data">Nenhuma fatura de cartão aberta.</p>
+                <p class="no-data">Nenhum cartão de crédito cadastrado.</p>
             </li>
             {% endfor %}
         </ul>
     </div>
-</section>
+    </section>
 
-<!-- Modal de Edição (escondido por padrão) -->
 <div id="edit-modal" class="modal">
     <div class="modal-content">
         <span class="close-btn" onclick="hideEditModal()">&times;</span>
@@ -148,15 +158,13 @@
 
             <label for="edit-category">Categoria:</label>
             <select id="edit-category" required>
-                <!-- As categorias serão preenchidas via JavaScript -->
-            </select>
+                </select>
 
             <button type="submit" class="btn-edit-submit">Salvar Alterações</button>
         </form>
     </div>
 </div>
 
-<!-- Modal de Confirmação de Exclusão (escondido por padrão) -->
 <div id="confirm-modal" class="modal">
     <div class="modal-content">
         <span class="close-btn" onclick="hideConfirmModal()">&times;</span>
@@ -165,6 +173,36 @@
         <div class="flex justify-end space-x-4 mt-4">
             <button class="btn-cancel" onclick="hideConfirmModal()">Cancelar</button>
             <button class="btn-confirm-delete" onclick="handleDelete()">Deletar</button>
+        </div>
+    </div>
+</div>
+
+<div id="edit-card-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="hideEditCardModal()">&times;</span>
+        <h2>Editar Cartão de Crédito</h2>
+        <form id="edit-card-form" onsubmit="submitEditCard(event)">
+            <input type="hidden" id="edit-card-id">
+            
+            <label for="edit-card-name">Nome do Cartão:</label>
+            <input type="text" id="edit-card-name" required>
+            
+            <label for="edit-card-due-day">Dia de Vencimento:</label>
+            <input type="number" id="edit-card-due-day" min="1" max="31" required>
+
+            <button type="submit" class="btn-edit-submit">Salvar Alterações</button>
+        </form>
+    </div>
+</div>
+
+<div id="confirm-card-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="hideConfirmCardModal()">&times;</span>
+        <h2>Confirmar Exclusão de Cartão</h2>
+        <p>Tem certeza que deseja deletar este cartão? **As transações associadas serão convertidas para o método 'Dinheiro'**.</p>
+        <div class="flex justify-end space-x-4 mt-4">
+            <button class="btn-cancel" onclick="hideConfirmCardModal()">Cancelar</button>
+            <button class="btn-confirm-delete" onclick="handleDeleteCard()">Deletar Cartão</button>
         </div>
     </div>
 </div>
@@ -180,15 +218,15 @@
     }
     .page-title {
         color: #2d3748;
-        font-size: 2.5rem; /* Aumenta o tamanho da fonte */
+        font-size: 2.5rem;
         font-weight: bold;
     }
     .month-selector select {
         padding: 8px 12px;
-        border-radius: 9999px; /* Adiciona bordas arredondadas */
+        border-radius: 9999px;
         border: 1px solid #e2e8f0;
         background-color: #f7fafc;
-        appearance: none; /* Remove o estilo padrão do navegador */
+        appearance: none;
         cursor: pointer;
     }
     .summary-cards {
@@ -339,9 +377,9 @@
         color: #d84315;
     }
 
-    /* Estilos dos Modais (Novos) */
+    /* Estilos dos Modais */
     .modal {
-        display: none; /* Escondido por padrão */
+        display: none; 
         position: fixed;
         z-index: 1000;
         left: 0;
@@ -404,6 +442,9 @@
 
 <script>
     let transactionToDeleteId = null;
+    let cardToDeleteId = null; // NOVO
+
+    // --- Funções de Transação ---
 
     // Função para mostrar o modal de confirmação
     function showDeleteConfirm(id) {
@@ -454,7 +495,7 @@
         document.getElementById('edit-modal').style.display = 'none';
     }
 
-    // Função para enviar a requisição de edição (PUT)
+    // Função para enviar a requisição de edição (POST)
     async function submitEdit(event) {
         event.preventDefault();
         const id = document.getElementById('edit-id').value;
@@ -466,7 +507,7 @@
 
         try {
             const response = await fetch(`/edit_transaction/${id}`, {
-                method: 'POST', // CORRIGIDO: mudou de 'PUT' para 'POST'
+                method: 'POST', 
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -512,6 +553,97 @@
             console.error('Ocorreu um erro ao conectar com o servidor.', error);
         }
     }
+    
+    // --- Funções de Cartão (NOVAS) ---
+    
+    // Exibir Modal de Edição de Cartão e buscar dados
+    async function showEditCardModal(id) {
+        try {
+            const response = await fetch(`/get_card_details/${id}`);
+            if (response.ok) {
+                const card = await response.json();
+                document.getElementById('edit-card-id').value = card.id;
+                document.getElementById('edit-card-name').value = card.name;
+                document.getElementById('edit-card-due-day').value = card.due_day;
+                document.getElementById('edit-card-modal').style.display = 'flex';
+            } else {
+                alert('Erro ao buscar detalhes do cartão.');
+            }
+        } catch (error) {
+            console.error('Erro ao buscar detalhes do cartão:', error);
+        }
+    }
+
+    // Esconder Modal de Edição de Cartão
+    function hideEditCardModal() {
+        document.getElementById('edit-card-modal').style.display = 'none';
+    }
+
+    // Submeter Edição de Cartão
+    async function submitEditCard(event) {
+        event.preventDefault();
+        const id = document.getElementById('edit-card-id').value;
+        const name = document.getElementById('edit-card-name').value;
+        const due_day = document.getElementById('edit-card-due-day').value;
+
+        try {
+            const response = await fetch(`/edit_card/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, due_day: due_day })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                alert(result.message);
+                window.location.reload();
+            } else {
+                alert('Erro ao atualizar o cartão: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Ocorreu um erro ao conectar com o servidor.', error);
+        }
+    }
+
+    // Mostrar modal de Confirmação de Exclusão de Cartão
+    function showDeleteCardConfirm(id) {
+        cardToDeleteId = id;
+        document.getElementById('confirm-card-modal').style.display = 'flex';
+    }
+
+    // Esconder modal de Confirmação de Exclusão de Cartão
+    function hideConfirmCardModal() {
+        document.getElementById('confirm-card-modal').style.display = 'none';
+        cardToDeleteId = null;
+    }
+
+    // Lidar com a exclusão do Cartão
+    async function handleDeleteCard() {
+        if (cardToDeleteId) {
+            deleteCard(cardToDeleteId);
+        }
+        hideConfirmCardModal();
+    }
+
+    // Enviar a requisição de exclusão (DELETE) do Cartão
+    async function deleteCard(id) {
+        try {
+            const response = await fetch(`/delete_card/${id}`, {
+                method: 'DELETE'
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                alert(result.message);
+                window.location.reload();
+            } else {
+                console.error('Erro ao deletar o cartão: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Ocorreu um erro ao conectar com o servidor.', error);
+        }
+    }
+    // --- Fim das Funções de Cartão ---
 
     // Adiciona o script de ícones Font Awesome para o HTML
     const fontAwesomeLink = document.createElement('link');

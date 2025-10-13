@@ -74,14 +74,16 @@ def register():
 @login_required
 def dashboard():
     user_id = current_user.id
+    now = datetime.now()
     
     try:
-        selected_month = int(request.args.get('month', datetime.now().month))
-        selected_year = int(request.args.get('year', datetime.now().year))
+        selected_month = int(request.args.get('month', now.month))
+        selected_year = int(request.args.get('year', now.year))
     except (ValueError, TypeError):
-        selected_month = datetime.now().month
-        selected_year = datetime.now().year
+        selected_month = now.month
+        selected_year = now.year
     
+    # 1. Obter Transações do Mês Selecionado (Exibidas na lista)
     transactions = Transaction.query.filter(
         Transaction.user_id == user_id,
         extract('month', Transaction.date) == selected_month,
@@ -94,14 +96,41 @@ def dashboard():
 
     years = sorted(list(set(t.date.year for t in Transaction.query.filter_by(user_id=user_id).all())))
     if not years:
-        years = [datetime.now().year]
+        years = range(now.year - 1, now.year + 2) # Garante que haja anos para o filtro
 
     month_names = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    
+    # --- Lógica de Fatura de Cartão (Simplificada) ---
+    
+    cards = Card.query.filter_by(user_id=user_id).all()
+    invoices = {'open': [], 'closed': []}
+    
+    # Busca todas as transações de cartão de crédito do usuário
+    all_card_transactions_db = Transaction.query.filter(
+        Transaction.user_id == user_id,
+        Transaction.payment_method.in_([c.name for c in cards]),
+        Transaction.type == 'expense'
+    ).all()
+    
+    # Calcula o total gasto por cartão no mês selecionado (Fatura Fechada Simplificada)
+    for card in cards:
+        total_card_expense = sum(
+            t.amount for t in all_card_transactions_db 
+            if t.payment_method == card.name and 
+               extract('month', t.date) == selected_month and 
+               extract('year', t.date) == selected_year
+        )
+        invoices['closed'].append({
+            'card_id': card.id, 
+            'name': card.name, 
+            'amount': total_card_expense, 
+            'due_day': card.due_day
+        })
 
+    # O total geral do cartão no resumo
     credit_card_bill = sum(t.amount for t in transactions if t.payment_method == 'Cartao de Credito' and t.type == 'expense')
     
-    invoices = []
-
+    
     return render_template(
         'dashboard.html', 
         active_page='dashboard',
@@ -114,7 +143,8 @@ def dashboard():
         selected_month=selected_month,
         selected_year=selected_year,
         month_names=month_names,
-        years=years
+        years=years,
+        cards=cards
     )
 
 # Adicionar Transação, Renda e Cartão (Rota Unificada)
@@ -353,6 +383,82 @@ def clear_data():
     flash('Todos os dados foram apagados com sucesso!', 'success')
     return redirect(url_for('main.dashboard'))
 
+# --- NOVAS ROTAS DE CARTÃO ---
+
+# Editar um cartão
+@main_bp.route('/edit_card/<int:card_id>', methods=['POST'])
+@login_required
+def edit_card(card_id):
+    card = Card.query.get_or_404(card_id)
+    if card.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Você não tem permissão para editar este cartão.'}), 403
+
+    data = request.json
+    try:
+        new_name = data.get('name')
+        new_due_day = data.get('due_day')
+        
+        if not new_name or not new_due_day:
+            return jsonify({'status': 'error', 'message': 'Nome e dia de vencimento são obrigatórios.'}), 400
+
+        due_day_int = int(new_due_day)
+        if not 1 <= due_day_int <= 31:
+            return jsonify({'status': 'error', 'message': 'O dia de vencimento deve ser entre 1 e 31.'}), 400
+
+        # Renomear as transações existentes para o novo nome do cartão (IMPORTANTE!)
+        if new_name != card.name:
+            Transaction.query.filter_by(user_id=current_user.id, payment_method=card.name).update(
+                {'payment_method': new_name}
+            )
+            
+        card.name = new_name
+        card.due_day = due_day_int
+        
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Cartão atualizado com sucesso!'}), 200
+    except (ValueError, TypeError):
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': 'Dia de vencimento inválido.'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# Deletar um cartão
+@main_bp.route('/delete_card/<int:card_id>', methods=['DELETE'])
+@login_required
+def delete_card(card_id):
+    card = Card.query.get_or_404(card_id)
+    if card.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Você não tem permissão para deletar este cartão.'}), 403
+
+    try:
+        # Transforma as transações do cartão em "Dinheiro" para não perdê-las
+        Transaction.query.filter_by(user_id=current_user.id, payment_method=card.name).update(
+            {'payment_method': 'Dinheiro'}
+        )
+        
+        db.session.delete(card)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Cartão deletado com sucesso!'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# Rota para buscar detalhes de um cartão (usado para preencher o modal de edição)
+@main_bp.route('/get_card_details/<int:card_id>', methods=['GET'])
+@login_required
+def get_card_details(card_id):
+    card = Card.query.get_or_404(card_id)
+    if card.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Não autorizado.'}), 403
+    
+    return jsonify({
+        'id': card.id,
+        'name': card.name,
+        'due_day': card.due_day
+    }), 200
+
+# Fim das Novas Rotas
 
 @main_bp.route("/chat")
 def chat():
